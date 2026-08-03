@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-labelledby="title">
+  <title id="title">B-Bay — фото блюда скоро появится</title>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#27272a"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs>
+  <rect width="800" height="560" fill="url(#g)"/><circle cx="670" cy="80" r="150" fill="#fff" fill-opacity=".09"/><circle cx="120" cy="500" r="170" fill="#fff" fill-opacity=".07"/>
+  <text x="50%" y="47%" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="88" fill="white">B-Bay</text>
+  <text x="50%" y="57%" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="white" fill-opacity=".8">фото блюда скоро появится</text>
+</svg>
