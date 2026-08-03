@@ -62,19 +62,43 @@ grant insert, update, delete on public.categories, public.menu_items to authenti
 
 -- The role is stored only in Supabase Auth app_metadata. Do not use user_metadata for authorization.
 drop policy if exists "Public read active categories" on public.categories;
+drop policy if exists "Authenticated read categories" on public.categories;
+drop policy if exists "Admins insert categories" on public.categories;
+drop policy if exists "Admins update categories" on public.categories;
+drop policy if exists "Admins delete categories" on public.categories;
+drop policy if exists "Admins manage categories" on public.categories;
 create policy "Public read active categories"
-on public.categories for select to anon, authenticated
+on public.categories for select to anon
 using (is_active = true);
 
-drop policy if exists "Admins manage categories" on public.categories;
-create policy "Admins manage categories"
-on public.categories for all to authenticated
-using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-with check ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "Authenticated read categories"
+on public.categories for select to authenticated
+using (
+  is_active = true
+  or ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin'
+);
+
+create policy "Admins insert categories"
+on public.categories for insert to authenticated
+with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "Admins update categories"
+on public.categories for update to authenticated
+using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin')
+with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "Admins delete categories"
+on public.categories for delete to authenticated
+using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
 
 drop policy if exists "Public read available menu items" on public.menu_items;
+drop policy if exists "Authenticated read menu items" on public.menu_items;
+drop policy if exists "Admins insert menu items" on public.menu_items;
+drop policy if exists "Admins update menu items" on public.menu_items;
+drop policy if exists "Admins delete menu items" on public.menu_items;
+drop policy if exists "Admins manage menu items" on public.menu_items;
 create policy "Public read available menu items"
-on public.menu_items for select to anon, authenticated
+on public.menu_items for select to anon
 using (
   is_available = true
   and exists (
@@ -83,11 +107,31 @@ using (
   )
 );
 
-drop policy if exists "Admins manage menu items" on public.menu_items;
-create policy "Admins manage menu items"
-on public.menu_items for all to authenticated
-using ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-with check ((select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "Authenticated read menu items"
+on public.menu_items for select to authenticated
+using (
+  (
+    is_available = true
+    and exists (
+      select 1 from public.categories
+      where categories.id = menu_items.category_id and categories.is_active = true
+    )
+  )
+  or ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin'
+);
+
+create policy "Admins insert menu items"
+on public.menu_items for insert to authenticated
+with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "Admins update menu items"
+on public.menu_items for update to authenticated
+using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin')
+with check (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
+
+create policy "Admins delete menu items"
+on public.menu_items for delete to authenticated
+using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
 
 -- The menu images are public to display quickly through Next/Image. Writes are restricted to admins.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -102,11 +146,11 @@ create policy "Admins manage B-Bay menu images"
 on storage.objects for all to authenticated
 using (
   bucket_id = 'menu-images'
-  and (select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  and ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin'
 )
 with check (
   bucket_id = 'menu-images'
-  and (select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  and ((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin'
 );
 
 -- Demo categories.
