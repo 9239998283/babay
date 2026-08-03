@@ -36,7 +36,7 @@ export function MenuHome({ categories, items, isDemo }: { categories: Category[]
   const filteredItems = useMemo(() => items.filter((item) => {
     const categoryMatches = activeCategory === "all" || item.category_id === activeCategory;
     const searchMatches = !deferredQuery || [item.name, item.description, item.composition].filter(Boolean).join(" ").toLowerCase().includes(deferredQuery);
-    return categoryMatches && searchMatches && item.is_available;
+    return categoryMatches && searchMatches;
   }), [items, activeCategory, deferredQuery]);
   const showHighlights = activeCategory === "all" && !deferredQuery;
   const popular = items.filter((item) => item.is_available && item.is_popular).slice(0, 4);

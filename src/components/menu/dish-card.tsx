@@ -13,6 +13,7 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
 
   function addQuickly(event: React.MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
+    if (!item.is_available) return;
     addItem({ item, quantity: 1, selectedOptions: [], comment: "" });
   }
 
@@ -28,10 +29,11 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"
           loading="lazy"
-          className="object-cover transition duration-500 group-hover:scale-105"
+          className={`object-cover transition duration-500 group-hover:scale-105 ${item.is_available ? "" : "grayscale-[35%] opacity-75"}`}
           onError={() => setImageSrc("/menu-placeholder.svg")}
         />
         <div className="absolute inset-x-3 top-3 flex gap-2">
+          {!item.is_available ? <span className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">Нет в наличии</span> : null}
           {item.is_popular ? <span className="rounded-full bg-zinc-950/85 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur">Популярное</span> : null}
           {item.is_new ? <span className="rounded-full bg-orange-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">Новинка</span> : null}
         </div>
@@ -46,8 +48,9 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
           <span className="text-xs font-medium text-zinc-400">{item.weight || "—"}</span>
           <button
             type="button"
-            aria-label={`Добавить ${item.name} в корзину`}
-            className="grid size-9 place-items-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            aria-label={item.is_available ? `Добавить ${item.name} в корзину` : `${item.name} нет в наличии`}
+            disabled={!item.is_available}
+            className="grid size-9 place-items-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none dark:disabled:bg-zinc-700"
             onClick={addQuickly}
           >
             <Plus size={19} />

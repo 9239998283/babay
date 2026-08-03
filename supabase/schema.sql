@@ -92,16 +92,16 @@ on public.categories for delete to authenticated
 using (((select auth.jwt()) -> 'app_metadata' ->> 'role') = 'admin');
 
 drop policy if exists "Public read available menu items" on public.menu_items;
+drop policy if exists "Public read menu items" on public.menu_items;
 drop policy if exists "Authenticated read menu items" on public.menu_items;
 drop policy if exists "Admins insert menu items" on public.menu_items;
 drop policy if exists "Admins update menu items" on public.menu_items;
 drop policy if exists "Admins delete menu items" on public.menu_items;
 drop policy if exists "Admins manage menu items" on public.menu_items;
-create policy "Public read available menu items"
+create policy "Public read menu items"
 on public.menu_items for select to anon
 using (
-  is_available = true
-  and exists (
+  exists (
     select 1 from public.categories
     where categories.id = menu_items.category_id and categories.is_active = true
   )
@@ -111,8 +111,7 @@ create policy "Authenticated read menu items"
 on public.menu_items for select to authenticated
 using (
   (
-    is_available = true
-    and exists (
+    exists (
       select 1 from public.categories
       where categories.id = menu_items.category_id and categories.is_active = true
     )

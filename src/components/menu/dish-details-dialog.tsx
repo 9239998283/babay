@@ -38,6 +38,7 @@ export function DishDetailsDialog({ item, onClose }: { item: MenuItem; onClose: 
   }
 
   function addToCart() {
+    if (!item.is_available) return;
     addItem({ item, quantity, selectedOptions, comment: comment.trim() });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1500);
@@ -58,6 +59,7 @@ export function DishDetailsDialog({ item, onClose }: { item: MenuItem; onClose: 
             <div>
               <h2 className="text-2xl font-extrabold tracking-tight text-zinc-950 dark:text-white">{item.name}</h2>
               {item.weight ? <p className="mt-1 text-sm font-medium text-zinc-400">{item.weight}</p> : null}
+              {!item.is_available ? <p className="mt-2 inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-950/40 dark:text-red-300">Нет в наличии</p> : null}
             </div>
             <p className="shrink-0 text-xl font-extrabold text-orange-600">{formatPrice(item.price)}</p>
           </div>
@@ -79,7 +81,7 @@ export function DishDetailsDialog({ item, onClose }: { item: MenuItem; onClose: 
           <label className="mt-6 block text-sm font-bold text-zinc-950 dark:text-white">Комментарий к блюду<textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={250} rows={2} placeholder="Например, без лука" className="mt-2 w-full resize-none rounded-xl border border-zinc-200 bg-white px-3.5 py-3 text-sm font-normal text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-orange-950" /></label>
           <div className="mt-6 flex items-center gap-3 border-t border-zinc-100 pt-5 dark:border-zinc-800">
             <QuantityControl quantity={quantity} onChange={setQuantity} />
-            <Button className="flex-1" size="lg" onClick={addToCart}>{added ? "Добавлено" : <><Plus size={18} /> В корзину · {formatPrice((item.price + optionsTotal) * quantity)}</>}</Button>
+            <Button className="flex-1" size="lg" onClick={addToCart} disabled={!item.is_available}>{!item.is_available ? "Нет в наличии" : added ? "Добавлено" : <><Plus size={18} /> В корзину · {formatPrice((item.price + optionsTotal) * quantity)}</>}</Button>
           </div>
         </div>
       </section>
