@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function PasswordForm() {
+export function PasswordForm({ embedded = false }: { embedded?: boolean }) {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ export function PasswordForm() {
   }
 
   return (
-    <section className="mb-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5">
+    <section className={embedded ? "pt-4" : "mb-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5"}>
       <div className="flex items-start gap-3">
         <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-600">
           <KeyRound size={19} />
