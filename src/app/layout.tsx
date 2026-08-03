@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CartProvider } from "@/store/cart-store";
+import { ThemeProvider } from "@/store/theme-store";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://b-bay-menu.vercel.app";
 
-export const viewport: Viewport = { themeColor: "#18181b", colorScheme: "light" };
+export const viewport: Viewport = { themeColor: "#f7f7f6", colorScheme: "light dark" };
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -39,5 +40,5 @@ const restaurantJsonLd = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru"><body><CartProvider>{children}</CartProvider><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(restaurantJsonLd) }} /></body></html>;
+  return <html lang="ru" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{ __html: `try{const t=localStorage.getItem("b-bay-theme");if(t==="dark"){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark"}}catch(e){}` }} /></head><body><ThemeProvider><CartProvider>{children}</CartProvider></ThemeProvider><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(restaurantJsonLd) }} /></body></html>;
 }

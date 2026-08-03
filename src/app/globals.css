@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-sans: Arial, Helvetica, sans-serif;
 }
 
 * { box-sizing: border-box; }
 html { background: #f7f7f6; }
-body { min-height: 100dvh; background: #f7f7f6; color: #18181b; font-family: Arial, Helvetica, sans-serif; }
+html.dark { background: #09090b; }
+body { min-height: 100dvh; background: #f7f7f6; color: #18181b; font-family: Arial, Helvetica, sans-serif; transition: background-color 180ms ease, color 180ms ease; }
+html.dark body { background: #09090b; color: #f4f4f5; }
 button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
 ::selection { background: #fed7aa; color: #18181b; }
 

@@ -18,7 +18,7 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
 
   return (
     <article
-      className="group relative min-w-0 cursor-pointer overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-950/8 focus-within:ring-2 focus-within:ring-orange-400"
+      className="group relative min-w-0 cursor-pointer overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-950/8 focus-within:ring-2 focus-within:ring-orange-400 dark:bg-zinc-900 dark:ring-white/10"
       onClick={() => onOpen(item)}
     >
       <div className="relative aspect-[1.35] overflow-hidden bg-zinc-100">
@@ -38,10 +38,10 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
       </div>
       <div className="p-3.5 sm:p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-1 text-[15px] font-bold leading-5 text-zinc-950 sm:text-base">{item.name}</h3>
+          <h3 className="line-clamp-1 text-[15px] font-bold leading-5 text-zinc-950 dark:text-white sm:text-base">{item.name}</h3>
           <span className="shrink-0 text-sm font-extrabold text-orange-600">{formatPrice(item.price)}</span>
         </div>
-        <p className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-zinc-500">{item.description || "Аппетитное блюдо от B-Bay."}</p>
+        <p className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{item.description || "Аппетитное блюдо от B-Bay."}</p>
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-zinc-400">{item.weight || "—"}</span>
           <button
