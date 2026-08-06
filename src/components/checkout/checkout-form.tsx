@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { formatPrice } from "@/lib/format";
+import { saveOrderSummary } from "@/lib/order-history";
 import { checkoutSchema, type CheckoutValues } from "@/lib/validation/checkout";
 import { buildWhatsAppMessage, makeWhatsAppLink } from "@/lib/whatsapp";
 import { useCart } from "@/store/cart-store";
@@ -17,8 +18,10 @@ const initialValues: CheckoutValues = {
   name: "",
   phone: "",
   fulfillment: "delivery",
+  payment: "cash",
   address: "",
   comment: "",
+  promoCode: "",
 };
 
 export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
@@ -27,10 +30,12 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [linkWasOpened, setLinkWasOpened] = useState(false);
   const [generalError, setGeneralError] = useState("");
+  const [promoWasAdded, setPromoWasAdded] = useState(false);
 
   function setField<K extends keyof CheckoutValues>(field: K, value: CheckoutValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
+    if (field === "promoCode") setPromoWasAdded(false);
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -53,6 +58,7 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
     }
 
     window.open(link, "_blank", "noopener,noreferrer");
+    saveOrderSummary(lines, result.data);
     setLinkWasOpened(true);
   }
 
@@ -122,6 +128,37 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
               Адрес и время готовности самовывоза уточнит сотрудник кафе.
             </p>
           )}
+        </div>
+
+        <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 sm:p-5">
+          <h2 className="font-bold text-zinc-950 dark:text-white">Способ оплаты</h2>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <Choice checked={values.payment === "cash"} onClick={() => setField("payment", "cash")} label="Наличными" />
+            <Choice checked={values.payment === "transfer"} onClick={() => setField("payment", "transfer")} label="Переводом" />
+          </div>
+
+          <div className="mt-4">
+            <label htmlFor="promo-code" className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Промокод</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                id="promo-code"
+                value={values.promoCode}
+                onChange={(event) => setField("promoCode", event.target.value.toUpperCase())}
+                maxLength={40}
+                placeholder="Если есть"
+                className="h-11 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3.5 text-sm font-medium uppercase text-zinc-950 outline-none transition placeholder:font-normal placeholder:normal-case placeholder:text-zinc-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-orange-950"
+              />
+              <button
+                type="button"
+                disabled={!values.promoCode.trim()}
+                onClick={() => setPromoWasAdded(true)}
+                className="h-11 rounded-xl bg-zinc-100 px-4 text-sm font-bold text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+              >
+                Применить
+              </button>
+            </div>
+          </div>
+          {promoWasAdded ? <p className="mt-2 text-xs leading-5 text-emerald-700 dark:text-emerald-400">Промокод добавлен. Скидку подтвердит сотрудник кафе.</p> : <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Итоговая скидка подтверждается кафе в WhatsApp.</p>}
         </div>
 
         {!embedded ? (

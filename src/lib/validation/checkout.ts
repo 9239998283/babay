@@ -9,8 +9,10 @@ export const checkoutSchema = z
       .min(8, "Укажите номер телефона")
       .regex(/^[+()\-\s\d]+$/, "Введите корректный номер телефона"),
     fulfillment: z.enum(["delivery", "pickup"]),
+    payment: z.enum(["cash", "transfer"]),
     address: z.string().trim().max(220),
     comment: z.string().trim().max(500),
+    promoCode: z.string().trim().max(40),
   })
   .superRefine((data, context) => {
     if (data.fulfillment === "delivery" && data.address.length < 5) {

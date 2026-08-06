@@ -1,15 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { useCart } from "@/store/cart-store";
 import type { MenuItem } from "@/types/menu";
 
-export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: MenuItem) => void }) {
-  const { addItem } = useCart();
+export function DishCard({ item, onOpen, viewMode = "grid" }: { item: MenuItem; onOpen: (item: MenuItem) => void; viewMode?: "grid" | "list" }) {
+  const { lines, addItem, updateQuantity } = useCart();
   const [imageSrc, setImageSrc] = useState(item.image_url || "/menu-placeholder.svg");
+  const quickLine = lines.find((line) => line.item.id === item.id && line.selectedOptions.length === 0 && !line.comment);
+  const isList = viewMode === "list";
 
   function addQuickly(event: React.MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
@@ -17,17 +19,23 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
     addItem({ item, quantity: 1, selectedOptions: [], comment: "" });
   }
 
+  function changeQuickQuantity(event: React.MouseEvent<HTMLButtonElement>, quantity: number) {
+    event.stopPropagation();
+    if (!quickLine) return;
+    updateQuantity(quickLine.key, quantity);
+  }
+
   return (
     <article
-      className="group relative min-w-0 cursor-pointer overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-950/8 focus-within:ring-2 focus-within:ring-orange-400 dark:bg-zinc-900 dark:ring-white/10"
+      className={`group relative min-w-0 cursor-pointer overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-zinc-950/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-950/8 focus-within:ring-2 focus-within:ring-orange-400 dark:bg-zinc-900 dark:ring-white/10 ${isList ? "flex min-h-36" : ""}`}
       onClick={() => onOpen(item)}
     >
-      <div className="relative aspect-[1.35] overflow-hidden bg-zinc-100">
+      <div className={`relative shrink-0 overflow-hidden bg-zinc-100 ${isList ? "w-32 sm:w-40" : "aspect-[1.35]"}`}>
         <Image
           src={imageSrc}
           alt={item.name}
           fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"
+          sizes={isList ? "160px" : "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"}
           loading="lazy"
           className={`object-cover transition duration-500 group-hover:scale-105 ${item.is_available ? "" : "grayscale-[35%] opacity-75"}`}
           onError={() => setImageSrc("/menu-placeholder.svg")}
@@ -38,23 +46,23 @@ export function DishCard({ item, onOpen }: { item: MenuItem; onOpen: (item: Menu
           {item.is_new ? <span className="rounded-full bg-orange-500 px-2.5 py-1 text-[11px] font-bold text-white shadow-sm">Новинка</span> : null}
         </div>
       </div>
-      <div className="p-3.5 sm:p-4">
+      <div className={`min-w-0 flex-1 p-3.5 sm:p-4 ${isList ? "flex flex-col justify-between" : ""}`}>
         <div className="flex items-start justify-between gap-2">
-          <h3 className="line-clamp-1 text-[15px] font-bold leading-5 text-zinc-950 dark:text-white sm:text-base">{item.name}</h3>
+          <h3 className={`${isList ? "line-clamp-2" : "line-clamp-1"} text-[15px] font-bold leading-5 text-zinc-950 dark:text-white sm:text-base`}>{item.name}</h3>
           <span className="shrink-0 text-sm font-extrabold text-orange-600">{formatPrice(item.price)}</span>
         </div>
-        <p className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{item.description || "Аппетитное блюдо от B-Bay."}</p>
+        <p className={`mt-1 line-clamp-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400 ${isList ? "" : "min-h-10"}`}>{item.description || "Аппетитное блюдо от B-Bay."}</p>
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-zinc-400">{item.weight || "—"}</span>
-          <button
-            type="button"
-            aria-label={item.is_available ? `Добавить ${item.name} в корзину` : `${item.name} нет в наличии`}
-            disabled={!item.is_available}
-            className="grid size-9 place-items-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none dark:disabled:bg-zinc-700"
-            onClick={addQuickly}
-          >
-            <Plus size={19} />
-          </button>
+          {quickLine ? <div className="inline-flex items-center gap-1 rounded-xl bg-orange-500 p-1 text-white shadow-lg shadow-orange-500/20" onClick={(event) => event.stopPropagation()}><button type="button" aria-label={`Уменьшить количество ${item.name}`} onClick={(event) => changeQuickQuantity(event, quickLine.quantity - 1)} className="grid size-7 place-items-center rounded-lg transition hover:bg-white/15"><Minus size={15} /></button><span className="min-w-5 text-center text-sm font-extrabold">{quickLine.quantity}</span><button type="button" aria-label={`Увеличить количество ${item.name}`} onClick={(event) => changeQuickQuantity(event, quickLine.quantity + 1)} className="grid size-7 place-items-center rounded-lg transition hover:bg-white/15"><Plus size={15} /></button></div> : <button
+              type="button"
+              aria-label={item.is_available ? `Добавить ${item.name} в корзину` : `${item.name} нет в наличии`}
+              disabled={!item.is_available}
+              className="grid size-9 place-items-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none dark:disabled:bg-zinc-700"
+              onClick={addQuickly}
+            >
+              <Plus size={19} />
+            </button>}
         </div>
       </div>
     </article>

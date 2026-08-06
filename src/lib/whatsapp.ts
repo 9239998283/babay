@@ -21,9 +21,11 @@ export function buildWhatsAppMessage(lines: CartLine[], checkout: CheckoutValues
 
   const details = [
     `Получение: ${checkout.fulfillment === "delivery" ? "доставка" : "самовывоз"}`,
+    `Оплата: ${checkout.payment === "cash" ? "наличными" : "переводом"}`,
     `Клиент: ${checkout.name}`,
     `Телефон: ${checkout.phone}`,
     ...(checkout.fulfillment === "delivery" ? [`Адрес: ${checkout.address}`] : []),
+    ...(checkout.promoCode ? [`Промокод: ${checkout.promoCode} (проверить)`] : []),
     ...(cartComment ? [`Комментарий к заказу: ${cartComment}`] : []),
     ...(checkout.comment ? [`Комментарий: ${checkout.comment}`] : []),
   ];
