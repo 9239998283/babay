@@ -11,7 +11,6 @@ export const checkoutSchema = z
     fulfillment: z.enum(["delivery", "pickup"]),
     payment: z.enum(["cash", "transfer"]),
     address: z.string().trim().max(220),
-    comment: z.string().trim().max(500),
     promoCode: z.string().trim().max(40),
   })
   .superRefine((data, context) => {

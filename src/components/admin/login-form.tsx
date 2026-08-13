@@ -1,6 +1,7 @@
 "use client";
 
 import { KeyRound, LoaderCircle, LockKeyhole, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -8,6 +9,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 type LoadingAction = "password" | "magic-link" | null;
 
 export function LoginForm({ isConfigured, initialError = "" }: { isConfigured: boolean; initialError?: string }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(initialError);
@@ -42,7 +44,8 @@ export function LoginForm({ isConfigured, initialError = "" }: { isConfigured: b
       return;
     }
 
-    window.location.assign("/admin");
+    router.replace("/admin");
+    router.refresh();
   }
 
   async function sendMagicLink() {

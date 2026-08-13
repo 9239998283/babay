@@ -27,7 +27,6 @@ export function buildWhatsAppMessage(lines: CartLine[], checkout: CheckoutValues
     ...(checkout.fulfillment === "delivery" ? [`Адрес: ${checkout.address}`] : []),
     ...(checkout.promoCode ? [`Промокод: ${checkout.promoCode} (проверить)`] : []),
     ...(cartComment ? [`Комментарий к заказу: ${cartComment}`] : []),
-    ...(checkout.comment ? [`Комментарий: ${checkout.comment}`] : []),
   ];
 
   return ["Новый заказ B-Bay", "", ...orderLines, "", `Итого: ${formatPrice(cartTotal(lines))}`, "", ...details].join("\n");

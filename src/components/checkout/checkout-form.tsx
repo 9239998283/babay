@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, MessageCircle, PackageOpen } from "lucide-react";
+import { CheckCircle2, MessageCircle, PackageOpen } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { formatPrice } from "@/lib/format";
 import { saveOrderSummary } from "@/lib/order-history";
 import { checkoutSchema, type CheckoutValues } from "@/lib/validation/checkout";
@@ -20,7 +19,6 @@ const initialValues: CheckoutValues = {
   fulfillment: "delivery",
   payment: "cash",
   address: "",
-  comment: "",
   promoCode: "",
 };
 
@@ -30,12 +28,10 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [linkWasOpened, setLinkWasOpened] = useState(false);
   const [generalError, setGeneralError] = useState("");
-  const [promoWasAdded, setPromoWasAdded] = useState(false);
 
   function setField<K extends keyof CheckoutValues>(field: K, value: CheckoutValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
-    if (field === "promoCode") setPromoWasAdded(false);
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -67,12 +63,6 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
     return (
       <main className="min-h-dvh bg-[#f7f7f6] px-4 py-6 transition-colors dark:bg-zinc-950 sm:px-6">
         <div className="mx-auto max-w-xl">
-          <div className="flex items-center justify-between gap-3">
-            <Link href="/cart" className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 dark:text-zinc-300">
-              <ArrowLeft size={18} />К корзине
-            </Link>
-            <ThemeToggle />
-          </div>
           <div className="mt-8">
             <EmptyState
               icon={<PackageOpen size={23} />}
@@ -139,7 +129,7 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
 
           <div className="mt-4">
             <label htmlFor="promo-code" className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">Промокод</label>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2">
               <input
                 id="promo-code"
                 value={values.promoCode}
@@ -148,26 +138,10 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
                 placeholder="Если есть"
                 className="h-11 min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3.5 text-sm font-medium uppercase text-zinc-950 outline-none transition placeholder:font-normal placeholder:normal-case placeholder:text-zinc-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white dark:focus:ring-orange-950"
               />
-              <button
-                type="button"
-                disabled={!values.promoCode.trim()}
-                onClick={() => setPromoWasAdded(true)}
-                className="h-11 rounded-xl bg-zinc-100 px-4 text-sm font-bold text-zinc-800 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
-              >
-                Применить
-              </button>
             </div>
           </div>
-          {promoWasAdded ? <p className="mt-2 text-xs leading-5 text-emerald-700 dark:text-emerald-400">Промокод добавлен. Скидку подтвердит сотрудник кафе.</p> : <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Итоговая скидка подтверждается кафе в WhatsApp.</p>}
+          <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Если промокод действует, сотрудник пересчитает сумму и подтвердит скидку в WhatsApp.</p>
         </div>
-
-        {!embedded ? (
-          <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:ring-white/10 sm:p-5">
-            <Field label="Комментарий к заказу" error={errors.comment}>
-              <textarea value={values.comment} onChange={(event) => setField("comment", event.target.value)} rows={3} maxLength={500} placeholder="Например, не добавлять лук" />
-            </Field>
-          </div>
-        ) : null}
 
         <section className="rounded-3xl bg-zinc-950 p-5 text-white ring-1 ring-white/10 dark:bg-white dark:text-zinc-950">
           <p className="text-sm text-zinc-400 dark:text-zinc-500">Итого к оплате</p>
@@ -198,19 +172,7 @@ export function CheckoutForm({ embedded = false }: { embedded?: boolean }) {
 
   if (embedded) return <section className="mt-6">{content}</section>;
 
-  return (
-    <main className="min-h-dvh bg-[#f7f7f6] pb-10 transition-colors dark:bg-zinc-950">
-      <div className="mx-auto max-w-xl px-4 py-5 sm:px-6 sm:py-8">
-        <div className="flex items-center justify-between gap-3">
-          <Link href="/cart" className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 transition hover:text-orange-600 dark:text-zinc-300">
-            <ArrowLeft size={18} />К корзине
-          </Link>
-          <ThemeToggle />
-        </div>
-        {content}
-      </div>
-    </main>
-  );
+  return <main className="min-h-dvh bg-[#f7f7f6] pb-10 transition-colors dark:bg-zinc-950"><div className="mx-auto max-w-xl px-4 py-5 sm:px-6 sm:py-8">{content}</div></main>;
 }
 
 function Field({ label, error, className = "", children }: { label: string; error?: string; className?: string; children: ReactNode }) {

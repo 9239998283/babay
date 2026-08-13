@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import { Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { QuantityControl } from "@/components/ui/quantity-control";
 import { formatPrice } from "@/lib/format";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 import { useCart } from "@/store/cart-store";
 import type { MenuItem, MenuOption } from "@/types/menu";
 
@@ -17,17 +18,17 @@ export function DishDetailsDialog({ item, onClose }: { item: MenuItem; onClose: 
   const [comment, setComment] = useState("");
   const [added, setAdded] = useState(false);
   const [imageSrc, setImageSrc] = useState(item.image_url || "/menu-placeholder.svg");
+  const addedTimer = useRef<number | null>(null);
   const optionsTotal = selectedOptions.reduce((sum, option) => sum + option.price, 0);
 
   useLockBodyScroll(true);
+  const dialogRef = useModalDialog<HTMLElement>(true, onClose);
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+    return () => {
+      if (addedTimer.current !== null) window.clearTimeout(addedTimer.current);
     };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, []);
 
   function toggleOption(option: MenuOption) {
     setSelectedOptions((current) =>
@@ -41,13 +42,14 @@ export function DishDetailsDialog({ item, onClose }: { item: MenuItem; onClose: 
     if (!item.is_available) return;
     addItem({ item, quantity, selectedOptions, comment: comment.trim() });
     setAdded(true);
-    window.setTimeout(() => setAdded(false), 1500);
+    if (addedTimer.current !== null) window.clearTimeout(addedTimer.current);
+    addedTimer.current = window.setTimeout(() => setAdded(false), 1500);
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-zinc-950/50 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label={item.name}>
       <button aria-label="Закрыть окно" className="absolute inset-0 cursor-default" onClick={onClose} />
-      <section className="relative max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-white text-zinc-900 shadow-2xl dark:bg-zinc-900 dark:text-zinc-100 sm:rounded-[2rem]">
+      <section ref={dialogRef} tabIndex={-1} className="relative max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-white text-zinc-900 shadow-2xl dark:bg-zinc-900 dark:text-zinc-100 sm:rounded-[2rem]">
         <div className="relative aspect-[1.55] overflow-hidden bg-zinc-100">
           <Image src={imageSrc} alt={item.name} fill priority sizes="(max-width: 700px) 100vw, 680px" className="object-cover" onError={() => setImageSrc("/menu-placeholder.svg")} />
           <button type="button" aria-label="Закрыть" onClick={onClose} className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/90 text-zinc-800 shadow-sm transition hover:bg-white">

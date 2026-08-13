@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { CheckoutForm } from "@/components/checkout/checkout-form";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Оформление заказа" };
 
 export default function CheckoutPage() {
-  return <CheckoutForm />;
+  redirect("/cart");
 }

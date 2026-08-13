@@ -1,11 +1,9 @@
-export type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  sort_order: number;
-  is_active: boolean;
-  created_at?: string;
-};
+import type { Database } from "./database";
+
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type MenuItemRow = Database["public"]["Tables"]["menu_items"]["Row"];
+
+export type Category = Omit<CategoryRow, "created_at"> & { created_at?: string };
 
 export type MenuOption = {
   id: string;
@@ -13,20 +11,7 @@ export type MenuOption = {
   price: number;
 };
 
-export type MenuItem = {
-  id: string;
-  category_id: string | null;
-  name: string;
-  slug: string;
-  description: string | null;
-  composition: string | null;
-  price: number;
-  weight: string | null;
-  image_url: string | null;
-  is_available: boolean;
-  is_popular: boolean;
-  is_new: boolean;
-  sort_order: number;
+export type MenuItem = Omit<MenuItemRow, "created_at" | "updated_at"> & {
   created_at?: string;
   updated_at?: string;
   options?: MenuOption[];

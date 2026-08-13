@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { PackageOpen, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { QuantityControl } from "@/components/ui/quantity-control";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 import { formatPrice } from "@/lib/format";
 import { cartLinePrice } from "@/lib/whatsapp";
 import { useCart } from "@/store/cart-store";
@@ -14,22 +15,14 @@ export function CartDrawer({ open, onClose }: { open: boolean; onClose: () => vo
   const { lines, count, total, orderComment, updateQuantity, removeItem, setOrderComment, clearCart } = useCart();
 
   useLockBodyScroll(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  const dialogRef = useModalDialog<HTMLElement>(open, onClose);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex justify-end bg-zinc-950/55 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Корзина">
       <button type="button" aria-label="Закрыть корзину" className="absolute inset-0 cursor-default" onClick={onClose} />
-      <section className="relative h-dvh w-full max-w-2xl overflow-y-auto bg-[#f7f7f6] shadow-2xl dark:bg-zinc-950">
+      <section ref={dialogRef} tabIndex={-1} className="relative h-dvh w-full max-w-2xl overflow-y-auto bg-[#f7f7f6] shadow-2xl dark:bg-zinc-950">
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-zinc-200/80 bg-[#f7f7f6]/95 px-4 py-4 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95 sm:px-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-600">Ваш заказ</p>

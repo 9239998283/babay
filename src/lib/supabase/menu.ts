@@ -9,7 +9,7 @@ export async function getPublicMenu(): Promise<MenuPayload> {
   }
 
   const [categoriesResult, itemsResult] = await Promise.all([
-    supabase.from("categories").select("*").order("sort_order").order("name"),
+    supabase.from("categories").select("*").eq("is_active", true).order("sort_order").order("name"),
     supabase.from("menu_items").select("*").order("sort_order").order("name"),
   ]);
 
@@ -18,9 +18,14 @@ export async function getPublicMenu(): Promise<MenuPayload> {
     return { categories: demoCategories, items: demoMenuItems, source: "demo" };
   }
 
+  const categories = (categoriesResult.data ?? []) as Category[];
+  const activeCategoryIds = new Set(categories.map((category) => category.id));
+
   return {
-    categories: (categoriesResult.data ?? []) as Category[],
-    items: (itemsResult.data ?? []) as MenuItem[],
+    categories,
+    items: ((itemsResult.data ?? []) as MenuItem[]).filter(
+      (item) => item.category_id === null || activeCategoryIds.has(item.category_id),
+    ),
     source: "supabase",
   };
 }

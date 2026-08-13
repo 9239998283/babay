@@ -1,8 +1,9 @@
 "use client";
 
 import { Search, ShoppingBag, X } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 import { formatPrice } from "@/lib/format";
 import { useCart } from "@/store/cart-store";
 import type { Category, MenuItem } from "@/types/menu";
@@ -24,15 +25,7 @@ export function MenuSearchDialog({ open, categories, items, onClose, onOpenItem,
   const { count, total } = useCart();
 
   useLockBodyScroll(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  const dialogRef = useModalDialog<HTMLDivElement>(open, onClose);
 
   const visibleCategories = categories.filter((category) => category.is_active);
   const filteredItems = useMemo(() => items.filter((item) => {
@@ -65,14 +58,14 @@ export function MenuSearchDialog({ open, categories, items, onClose, onOpenItem,
   }
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#f7f7f6] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" role="dialog" aria-modal="true" aria-label="Поиск по меню">
+    <div ref={dialogRef} tabIndex={-1} className="fixed inset-0 z-[60] overflow-y-auto bg-[#f7f7f6] text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100" role="dialog" aria-modal="true" aria-label="Поиск по меню">
       <header className="sticky top-0 z-10 border-b border-zinc-200/80 bg-[#f7f7f6]/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3 sm:px-6">
           <button type="button" aria-label="Закрыть поиск и вернуться в меню" onClick={onClose} className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white text-zinc-700 shadow-sm ring-1 ring-zinc-950/5 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-white/10"><X size={20} /></button>
           <label className="relative flex-1">
             <span className="sr-only">Поиск по меню</span>
             <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-zinc-400" />
-            <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти блюдо, состав или категорию" className="h-12 w-full rounded-2xl border border-zinc-200 bg-white pl-12 pr-4 text-base text-zinc-950 outline-none shadow-sm transition placeholder:text-zinc-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:ring-orange-950" />
+            <input data-autofocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Найти блюдо, состав или категорию" className="h-12 w-full rounded-2xl border border-zinc-200 bg-white pl-12 pr-4 text-base text-zinc-950 outline-none shadow-sm transition placeholder:text-zinc-400 focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus:ring-orange-950" />
           </label>
         </div>
       </header>

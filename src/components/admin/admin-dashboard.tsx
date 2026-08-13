@@ -1,6 +1,9 @@
 "use client";
 
-import { LoaderCircle, LogOut, Pencil, Plus, Save, Trash2, Upload } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ExternalLink, LoaderCircle, LogOut, Pencil, Plus, Save, Trash2, Upload, X } from "lucide-react";
 import { useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { PasswordForm } from "@/components/admin/password-form";
 import { Button } from "@/components/ui/button";
@@ -38,13 +41,15 @@ function makeEmptyItem(categories: Category[], items: MenuItem[]): ItemForm {
 }
 
 export function AdminDashboard({ initialCategories, initialItems, email }: { initialCategories: Category[]; initialItems: MenuItem[]; email: string }) {
+  const router = useRouter();
   const [categories, setCategories] = useState(initialCategories);
   const [items, setItems] = useState(initialItems);
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(() => makeEmptyCategory(initialCategories));
   const [itemForm, setItemForm] = useState<ItemForm>(() => makeEmptyItem(initialCategories, initialItems));
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [savingItem, setSavingItem] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -80,19 +85,28 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return reportError("Supabase не настроен.");
 
-    setSaving(true);
+    setSavingCategory(true);
     setError("");
-    const query = editingCategory
-      ? supabase.from("categories").update(result.data).eq("id", editingCategory).select().single()
-      : supabase.from("categories").insert(result.data).select().single();
-    const { data, error: mutationError } = await query;
-    setSaving(false);
+    let data: Category | null = null;
+    let mutationError: { code?: string; message: string } | null = null;
+    try {
+      const query = editingCategory
+        ? supabase.from("categories").update(result.data).eq("id", editingCategory).select().single()
+        : supabase.from("categories").insert(result.data).select().single();
+      const response = await query;
+      data = response.data;
+      mutationError = response.error;
+    } catch {
+      mutationError = { message: "Нет связи с сервером. Проверьте интернет и повторите." };
+    } finally {
+      setSavingCategory(false);
+    }
 
     if (mutationError || !data) {
       return reportError(mutationError?.code === "23505" ? "Категория с таким названием уже существует." : mutationError?.message ?? "Не удалось сохранить категорию");
     }
 
-    const category = data as Category;
+    const category = data;
     const nextCategories = (editingCategory
       ? categories.map((item) => item.id === category.id ? category : item)
       : [...categories, category]).sort(byOrder);
@@ -121,21 +135,29 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
   }
 
   async function uploadImage(file: File) {
-    if (!file.type.startsWith("image/")) return reportError("Можно загрузить только изображение.");
+    const extensions: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+    const extension = extensions[file.type];
+    if (!extension) return reportError("Поддерживаются только JPG, PNG и WebP.");
     if (file.size > 5 * 1024 * 1024) return reportError("Файл должен быть не больше 5 МБ.");
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return reportError("Supabase не настроен.");
 
-    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `menu/${crypto.randomUUID()}.${extension}`;
     setUploading(true);
     setError("");
-    const { error: uploadError } = await supabase.storage.from("menu-images").upload(path, file, {
-      cacheControl: "3600",
-      upsert: false,
-      contentType: file.type,
-    });
-    setUploading(false);
+    let uploadError: { message: string } | null = null;
+    try {
+      const response = await supabase.storage.from("menu-images").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      uploadError = response.error;
+    } catch {
+      uploadError = { message: "Не удалось загрузить фото. Проверьте интернет." };
+    } finally {
+      setUploading(false);
+    }
     if (uploadError) return reportError(uploadError.message);
 
     const { data } = supabase.storage.from("menu-images").getPublicUrl(path);
@@ -160,19 +182,28 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return reportError("Supabase не настроен.");
 
-    setSaving(true);
+    setSavingItem(true);
     setError("");
-    const query = editingItem
-      ? supabase.from("menu_items").update(result.data).eq("id", editingItem).select().single()
-      : supabase.from("menu_items").insert(result.data).select().single();
-    const { data, error: mutationError } = await query;
-    setSaving(false);
+    let data: MenuItem | null = null;
+    let mutationError: { code?: string; message: string } | null = null;
+    try {
+      const query = editingItem
+        ? supabase.from("menu_items").update(result.data).eq("id", editingItem).select().single()
+        : supabase.from("menu_items").insert(result.data).select().single();
+      const response = await query;
+      data = response.data;
+      mutationError = response.error;
+    } catch {
+      mutationError = { message: "Нет связи с сервером. Проверьте интернет и повторите." };
+    } finally {
+      setSavingItem(false);
+    }
 
     if (mutationError || !data) {
       return reportError(mutationError?.code === "23505" ? "Блюдо с таким названием уже существует." : mutationError?.message ?? "Не удалось сохранить блюдо");
     }
 
-    const item = data as MenuItem;
+    const item = data;
     const nextItems = (editingItem
       ? items.map((currentItem) => currentItem.id === item.id ? item : currentItem)
       : [...items, item]).sort(byOrder);
@@ -202,7 +233,8 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
 
   async function signOut() {
     await getSupabaseBrowserClient()?.auth.signOut();
-    window.location.assign("/login");
+    router.replace("/login");
+    router.refresh();
   }
 
   return (
@@ -213,9 +245,7 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
             <div className="grid size-10 place-items-center rounded-xl bg-orange-500 font-black italic text-white">B</div>
             <div><p className="font-extrabold text-zinc-950">B-Bay · Админ</p><p className="text-xs text-zinc-500">{email}</p></div>
           </div>
-          <button type="button" onClick={signOut} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100">
-            <LogOut size={17} />Выйти
-          </button>
+          <div className="flex items-center gap-1"><Link href="/" target="_blank" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100"><ExternalLink size={17} />Сайт</Link><button type="button" onClick={signOut} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100"><LogOut size={17} />Выйти</button></div>
         </div>
       </header>
 
@@ -242,8 +272,8 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
               />
               <Check label="Показывать в меню" checked={categoryForm.is_active} onChange={(checked) => setCategoryForm((current) => ({ ...current, is_active: checked }))} />
               <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={saving} className="flex-1">
-                  {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />}{editingCategory ? "Сохранить" : "Добавить категорию"}
+                <Button type="submit" size="sm" disabled={savingCategory} className="flex-1">
+                  {savingCategory ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />}{editingCategory ? "Сохранить" : "Добавить категорию"}
                 </Button>
                 {editingCategory ? <Button type="button" size="sm" variant="secondary" onClick={resetCategory}>Отмена</Button> : null}
               </div>
@@ -290,11 +320,13 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
               <div className="rounded-2xl border border-zinc-200 p-4 sm:col-span-2">
                 <p className="text-sm font-bold text-zinc-800">Фотография</p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
+                  {itemForm.image_url ? <div className="relative size-20 overflow-hidden rounded-xl bg-zinc-100"><Image src={itemForm.image_url} alt="Предпросмотр блюда" fill sizes="80px" className="object-cover" /></div> : null}
                   <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); }} />
                   <Button type="button" size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                     {uploading ? <LoaderCircle className="animate-spin" size={16} /> : <Upload size={16} />}{uploading ? "Загрузка…" : itemForm.image_url ? "Заменить фото" : "Загрузить фото"}
                   </Button>
                   <span className={`text-xs font-medium ${itemForm.image_url ? "text-emerald-600" : "text-zinc-400"}`}>{itemForm.image_url ? "Фото загружено" : "JPG, PNG или WebP до 5 МБ"}</span>
+                  {itemForm.image_url ? <button type="button" onClick={() => setItemForm((current) => ({ ...current, image_url: null }))} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-red-600 hover:bg-red-50"><X size={15} />Убрать</button> : null}
                 </div>
               </div>
 
@@ -311,8 +343,8 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
                 <Check label="Новинка" checked={itemForm.is_new} onChange={(checked) => setItemForm((current) => ({ ...current, is_new: checked }))} />
               </div>
 
-              <Button type="submit" disabled={saving || uploading} className="sm:col-span-2">
-                {saving ? <LoaderCircle className="animate-spin" size={17} /> : editingItem ? <Save size={17} /> : <Plus size={17} />}{editingItem ? "Сохранить изменения" : "Добавить блюдо"}
+              <Button type="submit" disabled={savingItem || uploading} className="sm:col-span-2">
+                {savingItem ? <LoaderCircle className="animate-spin" size={17} /> : editingItem ? <Save size={17} /> : <Plus size={17} />}{editingItem ? "Сохранить изменения" : "Добавить блюдо"}
               </Button>
             </form>
           </section>

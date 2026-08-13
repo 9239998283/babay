@@ -20,7 +20,7 @@ Next.js 16 (App Router), TypeScript, Tailwind CSS 4, Supabase (PostgreSQL, Auth,
 
 ## Локальный запуск
 
-Требуется Node.js 20.9 или новее.
+Требуется Node.js 22 или новее.
 
 ```bash
 npm install

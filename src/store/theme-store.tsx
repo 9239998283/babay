@@ -34,8 +34,12 @@ function subscribe(listener: () => void) {
 }
 
 function persistTheme(theme: Theme) {
-  window.localStorage.setItem(STORAGE_KEY, theme);
   applyTheme(theme);
+  try {
+    window.localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    // Theme switching still works when storage is unavailable.
+  }
   listeners.forEach((listener) => listener());
 }
 

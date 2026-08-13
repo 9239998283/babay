@@ -5,24 +5,21 @@ import { useEffect, useState } from "react";
 import { formatPrice } from "@/lib/format";
 import { clearSavedOrders, readSavedOrders, type SavedOrder } from "@/lib/order-history";
 import { useLockBodyScroll } from "@/hooks/use-lock-body-scroll";
+import { useModalDialog } from "@/hooks/use-modal-dialog";
 
 export function OrderHistoryDialog({ onClose }: { onClose: () => void }) {
   const [orders, setOrders] = useState<SavedOrder[]>(() => readSavedOrders());
 
   useLockBodyScroll(true);
+  const dialogRef = useModalDialog<HTMLElement>(true, onClose);
 
   useEffect(() => {
     const refresh = () => setOrders(readSavedOrders());
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
     window.addEventListener("b-bay-orders-updated", refresh);
-    document.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("b-bay-orders-updated", refresh);
-      document.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose]);
+  }, []);
 
   function clearHistory() {
     clearSavedOrders();
@@ -32,7 +29,7 @@ export function OrderHistoryDialog({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-zinc-950/55 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6" role="dialog" aria-modal="true" aria-label="Мои заказы">
       <button type="button" aria-label="Закрыть историю заказов" className="absolute inset-0 cursor-default" onClick={onClose} />
-      <section className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] bg-[#f7f7f6] p-5 shadow-2xl dark:bg-zinc-950 sm:rounded-[2rem] sm:p-6">
+      <section ref={dialogRef} tabIndex={-1} className="relative max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-t-[2rem] bg-[#f7f7f6] p-5 shadow-2xl dark:bg-zinc-950 sm:rounded-[2rem] sm:p-6">
         <header className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-orange-600">На этом устройстве</p>
