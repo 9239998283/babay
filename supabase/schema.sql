@@ -59,6 +59,7 @@ alter table public.menu_items enable row level security;
 grant usage on schema public to anon, authenticated;
 grant select on public.categories, public.menu_items to anon, authenticated;
 grant insert, update, delete on public.categories, public.menu_items to authenticated;
+revoke insert, update, delete on public.categories, public.menu_items from anon;
 
 -- The role is stored only in Supabase Auth app_metadata. Do not use user_metadata for authorization.
 drop policy if exists "Public read active categories" on public.categories;
