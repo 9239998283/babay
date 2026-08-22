@@ -18,7 +18,7 @@ export function QuantityControl({ quantity, onChange, min = 1, max = 99, size = 
         type="button"
         aria-label="Уменьшить количество"
         disabled={quantity <= min}
-        className={`grid place-items-center rounded-lg bg-white text-zinc-800 shadow-sm transition hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-700 dark:text-white ${compact ? "size-9" : "size-10"}`}
+        className="grid size-11 place-items-center rounded-lg bg-white text-zinc-800 shadow-sm transition hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-700 dark:text-white"
         onClick={() => onChange(Math.max(min, quantity - 1))}
       >
         <Minus size={compact ? 14 : 16} />
@@ -28,7 +28,7 @@ export function QuantityControl({ quantity, onChange, min = 1, max = 99, size = 
         type="button"
         aria-label="Увеличить количество"
         disabled={quantity >= max}
-        className={`grid place-items-center rounded-lg bg-white text-zinc-800 shadow-sm transition hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-700 dark:text-white ${compact ? "size-9" : "size-10"}`}
+        className="grid size-11 place-items-center rounded-lg bg-white text-zinc-800 shadow-sm transition hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-700 dark:text-white"
         onClick={() => onChange(Math.min(max, quantity + 1))}
       >
         <Plus size={compact ? 14 : 16} />

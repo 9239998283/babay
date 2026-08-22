@@ -16,6 +16,13 @@ button, a { touch-action: manipulation; }
 :where(button, a, input, textarea, select, summary):focus-visible { outline: 2px solid #f97316; outline-offset: 3px; }
 ::selection { background: #fed7aa; color: #18181b; }
 
+@media (max-width: 640px) {
+  :where(button, a[href], select, summary, input:not([type="checkbox"]):not([type="radio"]), textarea) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

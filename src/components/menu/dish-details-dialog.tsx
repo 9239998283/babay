@@ -52,7 +52,7 @@ export function DishDetailsDialog({ item, onClose }: { item: MenuItem; onClose: 
       <section ref={dialogRef} tabIndex={-1} className="relative max-h-[92dvh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] bg-white text-zinc-900 shadow-2xl dark:bg-zinc-900 dark:text-zinc-100 sm:rounded-[2rem]">
         <div className="relative aspect-[1.55] overflow-hidden bg-zinc-100">
           <Image src={imageSrc} alt={item.name} fill priority sizes="(max-width: 700px) 100vw, 680px" className="object-cover" onError={() => setImageSrc("/menu-placeholder.svg")} />
-          <button type="button" aria-label="Закрыть" onClick={onClose} className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/90 text-zinc-800 shadow-sm transition hover:bg-white">
+          <button type="button" aria-label="Закрыть" onClick={onClose} className="absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-white/90 text-zinc-800 shadow-sm transition hover:bg-white">
             <X size={20} />
           </button>
         </div>

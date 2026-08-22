@@ -3,14 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, LoaderCircle, LogOut, Pencil, Plus, Save, Trash2, Upload, X } from "lucide-react";
+import { BarChart3, ExternalLink, ListOrdered, LoaderCircle, LogOut, Pencil, Plus, Save, Settings, Tags, Trash2, Upload, UtensilsCrossed, X } from "lucide-react";
 import { useRef, useState, type FormEvent, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { PasswordForm } from "@/components/admin/password-form";
+import { AdminAnalytics } from "@/components/admin/admin-analytics";
+import { AdminOrders } from "@/components/admin/admin-orders";
+import { AdminSettings } from "@/components/admin/admin-settings";
 import { Button } from "@/components/ui/button";
 import { slugify } from "@/lib/format";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { categorySchema, menuItemSchema } from "@/lib/validation/checkout";
 import type { Category, MenuItem } from "@/types/menu";
+import type { DeliveryZone, PromoCode, RestaurantSettings } from "@/types/restaurant";
 
 type CategoryForm = Pick<Category, "name" | "slug" | "sort_order" | "is_active">;
 type ItemForm = Omit<MenuItem, "id" | "created_at" | "updated_at" | "options">;
@@ -40,10 +44,14 @@ function makeEmptyItem(categories: Category[], items: MenuItem[]): ItemForm {
   };
 }
 
-export function AdminDashboard({ initialCategories, initialItems, email }: { initialCategories: Category[]; initialItems: MenuItem[]; email: string }) {
+type AdminSection = "orders" | "dishes" | "categories" | "settings" | "analytics";
+
+export function AdminDashboard({ initialCategories, initialItems, initialSettings, initialZones, initialPromos, email }: { initialCategories: Category[]; initialItems: MenuItem[]; initialSettings: RestaurantSettings; initialZones: DeliveryZone[]; initialPromos: PromoCode[]; email: string }) {
   const router = useRouter();
   const [categories, setCategories] = useState(initialCategories);
   const [items, setItems] = useState(initialItems);
+  const [activeSection, setActiveSection] = useState<AdminSection>("orders");
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(() => new Set());
   const [categoryForm, setCategoryForm] = useState<CategoryForm>(() => makeEmptyCategory(initialCategories));
   const [itemForm, setItemForm] = useState<ItemForm>(() => makeEmptyItem(initialCategories, initialItems));
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -139,20 +147,16 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
     const extension = extensions[file.type];
     if (!extension) return reportError("Поддерживаются только JPG, PNG и WebP.");
     if (file.size > 5 * 1024 * 1024) return reportError("Файл должен быть не больше 5 МБ.");
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return reportError("Supabase не настроен.");
-
-    const path = `menu/${crypto.randomUUID()}.${extension}`;
     setUploading(true);
     setError("");
     let uploadError: { message: string } | null = null;
     try {
-      const response = await supabase.storage.from("menu-images").upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type,
-      });
-      uploadError = response.error;
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/images", { method: "POST", body: formData });
+      const payload = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !payload.url) uploadError = { message: payload.error ?? "Не удалось загрузить фото." };
+      else setItemForm((current) => ({ ...current, image_url: payload.url ?? null }));
     } catch {
       uploadError = { message: "Не удалось загрузить фото. Проверьте интернет." };
     } finally {
@@ -160,9 +164,19 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
     }
     if (uploadError) return reportError(uploadError.message);
 
-    const { data } = supabase.storage.from("menu-images").getPublicUrl(path);
-    setItemForm((current) => ({ ...current, image_url: data.publicUrl }));
     reportSuccess("Фотография загружена");
+  }
+
+  async function updateAvailability(ids: string[], available: boolean) {
+    if (!ids.length) return;
+    try {
+      const response = await fetch("/api/admin/menu/availability", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, available }) });
+      const payload = await response.json() as { error?: string };
+      if (!response.ok) return reportError(payload.error ?? "Не удалось изменить доступность.");
+      setItems((current) => current.map((item) => ids.includes(item.id) ? { ...item, is_available: available } : item));
+      setSelectedItemIds(new Set());
+      reportSuccess(available ? "Блюда возвращены в меню" : "Блюда добавлены в стоп-лист");
+    } catch { reportError("Нет связи с сервером."); }
   }
 
   async function saveItem(event: FormEvent<HTMLFormElement>) {
@@ -250,16 +264,27 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
       </header>
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <nav aria-label="Разделы админ-панели" className="mb-6 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          <AdminNavButton active={activeSection === "orders"} onClick={() => setActiveSection("orders")} icon={<ListOrdered size={17} />}>Заказы</AdminNavButton>
+          <AdminNavButton active={activeSection === "dishes"} onClick={() => setActiveSection("dishes")} icon={<UtensilsCrossed size={17} />}>Блюда</AdminNavButton>
+          <AdminNavButton active={activeSection === "categories"} onClick={() => setActiveSection("categories")} icon={<Tags size={17} />}>Категории</AdminNavButton>
+          <AdminNavButton active={activeSection === "settings"} onClick={() => setActiveSection("settings")} icon={<Settings size={17} />}>Настройки</AdminNavButton>
+          <AdminNavButton active={activeSection === "analytics"} onClick={() => setActiveSection("analytics")} icon={<BarChart3 size={17} />}>Аналитика</AdminNavButton>
+        </nav>
         <div className="mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950">Управление меню</h1>
-          <p className="mt-1 text-sm text-zinc-500">Добавляйте категории и блюда — технические настройки сайт заполнит сам.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-950">Админ-панель B-Bay</h1>
+          <p className="mt-1 text-sm text-zinc-500">Заказы, меню и операционные настройки в одном месте.</p>
         </div>
 
         {notice ? <p role="status" className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{notice}</p> : null}
         {error ? <p role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</p> : null}
 
-        <div className="grid gap-6 lg:grid-cols-[.8fr_1.5fr]">
-          <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5">
+        {activeSection === "orders" ? <AdminOrders /> : null}
+        {activeSection === "settings" ? <><AdminSettings initialSettings={initialSettings} initialZones={initialZones} initialPromos={initialPromos} /><details className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3"><summary className="cursor-pointer text-sm font-bold text-zinc-700">Безопасность, пароль и сессии</summary><PasswordForm embedded /></details></> : null}
+        {activeSection === "analytics" ? <AdminAnalytics /> : null}
+
+        <div className={`${activeSection === "dishes" || activeSection === "categories" ? "grid" : "hidden"} gap-6 ${activeSection === "dishes" ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,760px)]"}`}>
+          <section className={`${activeSection === "categories" ? "block" : "hidden"} rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5`}>
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-zinc-950">Категории</h2><span className="text-sm text-zinc-400">{categories.length}</span></div>
             <p className="mt-1 text-sm text-zinc-500">Например: Пицца, Напитки, Десерты.</p>
             <form onSubmit={saveCategory} className="mt-4 space-y-3">
@@ -292,7 +317,7 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5">
+          <section className={`${activeSection === "dishes" ? "block" : "hidden"} rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5`}>
             <div className="flex items-center justify-between">
               <div><h2 className="text-lg font-bold text-zinc-950">{editingItem ? "Изменить блюдо" : "Добавить блюдо"}</h2><p className="mt-1 text-sm text-zinc-500">Заполните основные данные для клиента.</p></div>
               {editingItem ? <button type="button" onClick={resetItem} className="text-sm font-bold text-orange-600">Отменить</button> : null}
@@ -312,7 +337,7 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
                   {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                 </select>
               </label>
-              <AdminInput label="Цена, ₽" type="number" min="0" value={String(itemForm.price)} onChange={(value) => setItemForm((current) => ({ ...current, price: Number(value) || 0 }))} required />
+              <AdminInput label="Цена, ₽" type="number" min="1" value={String(itemForm.price)} onChange={(value) => setItemForm((current) => ({ ...current, price: Number(value) || 0 }))} required />
               <AdminInput label="Вес или объём" value={itemForm.weight ?? ""} onChange={(value) => setItemForm((current) => ({ ...current, weight: value }))} placeholder="Например, 280 г или 400 мл" />
               <AdminTextArea className="sm:col-span-2" label="Описание" value={itemForm.description ?? ""} onChange={(value) => setItemForm((current) => ({ ...current, description: value }))} rows={2} placeholder="Коротко расскажите о блюде" />
               <AdminTextArea className="sm:col-span-2" label="Состав" value={itemForm.composition ?? ""} onChange={(value) => setItemForm((current) => ({ ...current, composition: value }))} rows={3} placeholder="Перечислите основные ингредиенты" />
@@ -350,11 +375,13 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
           </section>
         </div>
 
-        <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5">
-          <div className="flex items-center justify-between"><div><h2 className="text-lg font-bold text-zinc-950">Все блюда</h2><p className="mt-1 text-sm text-zinc-500">Нажмите карандаш, чтобы изменить блюдо.</p></div><span className="text-sm text-zinc-400">{items.length}</span></div>
+        <section className={`${activeSection === "dishes" ? "block" : "hidden"} mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-zinc-950/5 sm:p-5`}>
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-zinc-950">Все блюда</h2><p className="mt-1 text-sm text-zinc-500">Быстрый стоп-лист работает без открытия формы.</p></div><span className="text-sm text-zinc-400">{items.length}</span></div>
+          {selectedItemIds.size ? <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl bg-orange-50 p-3"><span className="mr-auto text-sm font-bold text-orange-900">Выбрано: {selectedItemIds.size}</span><Button type="button" size="sm" variant="secondary" onClick={() => void updateAvailability([...selectedItemIds], true)}>В наличии</Button><Button type="button" size="sm" variant="secondary" onClick={() => void updateAvailability([...selectedItemIds], false)}>В стоп-лист</Button></div> : null}
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {items.length ? items.map((item) => (
               <article key={item.id} className="rounded-2xl border border-zinc-100 p-3">
+                <label className="mb-2 flex min-h-8 items-center gap-2 text-xs font-semibold text-zinc-500"><input type="checkbox" checked={selectedItemIds.has(item.id)} onChange={(event) => setSelectedItemIds((current) => { const next = new Set(current); if (event.target.checked) next.add(item.id); else next.delete(item.id); return next; })} className="size-4 accent-orange-500" />Выбрать</label>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0"><h3 className="truncate font-bold text-zinc-900">{item.name}</h3><p className="mt-0.5 text-sm font-semibold text-orange-600">{new Intl.NumberFormat("ru-RU").format(item.price)} ₽</p></div>
                   <div className="flex">
@@ -368,15 +395,12 @@ export function AdminDashboard({ initialCategories, initialItems, email }: { ini
                   {item.is_popular ? <Tag>Популярное</Tag> : null}
                   {item.is_new ? <Tag>Новинка</Tag> : null}
                 </div>
+                <button type="button" onClick={() => void updateAvailability([item.id], !item.is_available)} className={`mt-3 min-h-11 w-full rounded-xl text-xs font-bold transition ${item.is_available ? "bg-red-50 text-red-700 hover:bg-red-100" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}>{item.is_available ? "В стоп-лист" : "Вернуть в наличие"}</button>
               </article>
             )) : <p className="py-8 text-center text-sm text-zinc-500">Добавьте первое блюдо в меню.</p>}
           </div>
         </section>
 
-        <details className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <summary className="cursor-pointer text-sm font-bold text-zinc-700">Настройки входа и пароля</summary>
-          <PasswordForm embedded />
-        </details>
       </div>
     </main>
   );
@@ -394,6 +418,10 @@ function AdminInput({ label, value, onChange, className = "", ...props }: { labe
 
 function AdminTextArea({ label, value, onChange, className = "", ...props }: { label: string; value: string; onChange: (value: string) => void; className?: string } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange">) {
   return <label className={`block text-sm font-semibold text-zinc-700 ${className}`}>{label}<textarea value={value} onChange={(event) => onChange(event.target.value)} className="mt-1.5 w-full resize-none rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-normal outline-none transition placeholder:text-zinc-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100" {...props} /></label>;
+}
+
+function AdminNavButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) {
+  return <button type="button" aria-current={active ? "page" : undefined} onClick={onClick} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-bold transition ${active ? "bg-zinc-950 text-white shadow-sm" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-50"}`}>{icon}{children}</button>;
 }
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {

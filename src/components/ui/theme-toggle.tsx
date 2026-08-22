@@ -14,7 +14,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         aria-label={nextTheme === "dark" ? "Включить чёрный фон" : "Включить белый фон"}
         title={nextTheme === "dark" ? "Чёрный фон" : "Белый фон"}
         onClick={() => setTheme(nextTheme)}
-        className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/20"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white shadow-sm backdrop-blur transition hover:bg-white/20"
       >
         {theme === "light" ? <Moon size={15} /> : <Sun size={15} />}
         Фон
@@ -32,7 +32,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         aria-pressed={theme === "light"}
         onClick={() => setTheme("light")}
-        className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${theme === "light" ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"}`}
+        className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${theme === "light" ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"}`}
       >
         <Sun size={14} />
         Белый
@@ -41,7 +41,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         type="button"
         aria-pressed={theme === "dark"}
         onClick={() => setTheme("dark")}
-        className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${theme === "dark" ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"}`}
+        className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition ${theme === "dark" ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"}`}
       >
         <Moon size={14} />
         Чёрный

@@ -22,25 +22,29 @@ export function LoginForm({ isConfigured, initialError = "" }: { isConfigured: b
     setError("");
     setMessage("");
 
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
+    if (!isConfigured) {
       setError("Supabase не настроен. Добавьте переменные окружения.");
       return;
     }
 
     setLoading("password");
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+    } catch {
+      setLoading(null);
+      setError("Нет связи с сервером. Повторите попытку.");
+      return;
+    }
+    const payload = await response.json() as { error?: string };
     setLoading(null);
 
-    if (signInError) {
-      setError(
-        signInError.code === "invalid_credentials"
-          ? "Неверный email или пароль. Если пароль ещё не задан, используйте одноразовую ссылку."
-          : "Не удалось войти: " + signInError.message,
-      );
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось войти.");
       return;
     }
 

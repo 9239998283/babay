@@ -10,13 +10,10 @@ import { MenuSearchDialog } from "./menu-search-dialog";
 import { OrderHistoryDialog } from "./order-history-dialog";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { makeWhatsAppLink } from "@/lib/whatsapp";
+import { isRestaurantAcceptingOrders } from "@/lib/restaurant-hours";
 import { useCart } from "@/store/cart-store";
 import type { Category, MenuItem } from "@/types/menu";
-
-function getOpenStatus() {
-  const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Moscow", hour: "2-digit", hourCycle: "h23" }).format(new Date()));
-  return hour >= 10 && hour < 23;
-}
+import type { PublicRestaurantConfig } from "@/types/restaurant";
 
 function SectionHeading({ icon, eyebrow = "B-Bay рекомендует", title, subtitle }: { icon: ReactNode; eyebrow?: string; title: string; subtitle?: ReactNode }) {
   return <div className="mb-4 flex items-end justify-between gap-3"><div><div className="flex items-center gap-2 text-orange-600">{icon}<span className="text-xs font-bold uppercase tracking-[0.14em]">{eyebrow}</span></div><h2 className="mt-1 text-xl font-extrabold tracking-tight text-zinc-950 dark:text-white sm:text-2xl">{title}</h2></div>{subtitle ? <div className="pb-1 text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</div> : null}</div>;
@@ -25,19 +22,19 @@ function SectionHeading({ icon, eyebrow = "B-Bay рекомендует", title,
 function CartButton({ onOpen }: { onOpen: () => void }) {
   const { count, total } = useCart();
   if (count === 0) return null;
-  return <button type="button" onClick={onOpen} className="fixed bottom-20 left-4 right-4 z-40 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-zinc-950 px-5 py-3.5 text-white shadow-2xl shadow-zinc-950/25 transition hover:-translate-y-0.5 dark:bg-white dark:text-zinc-950 sm:bottom-6"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-orange-500 text-white"><ShoppingBag size={18} /></span><span className="font-bold">Открыть корзину <span className="text-zinc-400">· {count} шт.</span></span></span><span className="font-extrabold">{new Intl.NumberFormat("ru-RU").format(total)} ₽</span></button>;
+  return <button type="button" onClick={onOpen} className="fixed bottom-6 left-4 right-4 z-40 mx-auto hidden max-w-2xl items-center justify-between rounded-2xl bg-zinc-950 px-5 py-3.5 text-white shadow-2xl shadow-zinc-950/25 transition hover:-translate-y-0.5 dark:bg-white dark:text-zinc-950 sm:flex"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-orange-500 text-white"><ShoppingBag size={18} /></span><span className="font-bold">Открыть корзину <span className="text-zinc-400">· {count} шт.</span></span></span><span className="font-extrabold">{new Intl.NumberFormat("ru-RU").format(total)} ₽</span></button>;
 }
 
-export function MenuHome({ categories, items, isDemo }: { categories: Category[]; items: MenuItem[]; isDemo: boolean }) {
-  const { count: cartCount } = useCart();
+export function MenuHome({ categories, items, isDemo, config }: { categories: Category[]; items: MenuItem[]; isDemo: boolean; config: PublicRestaurantConfig }) {
+  const { count: cartCount, total: cartTotal } = useCart();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchIsOpen, setSearchIsOpen] = useState(false);
   const [cartIsOpen, setCartIsOpen] = useState(false);
   const [ordersAreOpen, setOrdersAreOpen] = useState(false);
-  const isOpen = getOpenStatus();
-  const whatsAppLink = makeWhatsAppLink("Здравствуйте! Хочу уточнить информацию по меню B-Bay.");
+  const isOpen = isRestaurantAcceptingOrders(config.settings);
+  const whatsAppLink = makeWhatsAppLink("Здравствуйте! Хочу уточнить информацию по меню B-Bay.", config.settings.whatsapp_phone);
 
   const filteredItems = useMemo(() => items.filter((item) => activeCategory === "all" || item.category_id === activeCategory), [items, activeCategory]);
   const showHighlights = activeCategory === "all";
@@ -47,9 +44,9 @@ export function MenuHome({ categories, items, isDemo }: { categories: Category[]
   return <main className="min-h-dvh bg-[#f7f7f6] pb-36 text-zinc-900 transition-colors dark:bg-zinc-950 dark:text-zinc-100"><div className="mx-auto max-w-6xl px-4 pb-7 pt-4 sm:px-6 sm:pt-6">
     <header className="relative rounded-[2rem] bg-zinc-950 px-5 pb-5 pt-5 text-white shadow-xl shadow-zinc-950/10 sm:px-7 sm:pb-7">
       <div className="absolute right-5 top-5 sm:right-7"><ThemeToggle compact /></div>
-      <div className="flex items-center gap-3 pr-20"><div className="grid size-12 place-items-center rounded-2xl bg-orange-500 text-lg font-black italic shadow-lg shadow-orange-500/30">B</div><div><p className="text-lg font-extrabold tracking-tight">B-Bay <span className="font-medium text-zinc-400">«Бабай»</span></p><p className="mt-0.5 text-xs text-zinc-400">Вкус, к которому хочется вернуться</p></div></div>
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-zinc-300"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${isOpen ? "bg-emerald-400/15 text-emerald-300" : "bg-red-400/15 text-red-300"}`}><span className={`mr-1.5 inline-block size-1.5 rounded-full ${isOpen ? "bg-emerald-400" : "bg-red-400"}`} />{isOpen ? "Открыто" : "Закрыто"}</span><p className="flex items-center gap-2"><Clock3 size={16} className="text-orange-400" />Ежедневно, 10:00–23:00</p><p className="flex items-center gap-2"><MapPin size={16} className="text-orange-400" />Грозный, центр города</p></div>
-      <a href={whatsAppLink ?? undefined} target="_blank" rel="noreferrer" aria-disabled={!whatsAppLink} className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-zinc-950 transition hover:bg-orange-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"><MessageCircle size={17} className="text-emerald-600" />Связаться в WhatsApp</a>
+      <div className="flex items-center gap-3 pr-20"><div className="grid size-12 place-items-center rounded-2xl bg-orange-500 text-lg font-black italic shadow-lg shadow-orange-500/30">B</div><div><h1 className="text-lg font-extrabold tracking-tight">{config.settings.establishment_name}</h1><p className="mt-0.5 text-xs text-zinc-400">Вкус, к которому хочется вернуться</p></div></div>
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-zinc-300"><span className={`rounded-full px-3 py-1.5 text-xs font-bold ${isOpen ? "bg-emerald-400/15 text-emerald-300" : "bg-red-400/15 text-red-300"}`}><span className={`mr-1.5 inline-block size-1.5 rounded-full ${isOpen ? "bg-emerald-400" : "bg-red-400"}`} />{isOpen ? "Приём заказов открыт" : "Приём заказов закрыт"}</span><p className="flex items-center gap-2"><Clock3 size={16} className="text-orange-400" />Готовим от {config.settings.preparation_minutes} мин.</p><p className="flex items-center gap-2"><MapPin size={16} className="text-orange-400" />{config.settings.address}</p></div>
+      <a href={whatsAppLink ?? undefined} target="_blank" rel="noreferrer" aria-disabled={!whatsAppLink} className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-zinc-950 transition hover:bg-orange-50 aria-disabled:pointer-events-none aria-disabled:opacity-50"><MessageCircle size={17} className="text-emerald-600" />Связаться в WhatsApp</a>
     </header>
 
     {isDemo ? <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm leading-5 text-orange-900"><strong>Временно показано демонстрационное меню.</strong> За наличие и цены уточните у кафе.</div> : null}
@@ -59,7 +56,7 @@ export function MenuHome({ categories, items, isDemo }: { categories: Category[]
     </div>
   </div>
 
-  <nav aria-label="Категории меню" className="sticky top-0 z-30 border-y border-zinc-200/80 bg-[#f7f7f6]/95 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95"><div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:px-6"><button onClick={() => setActiveCategory("all")} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeCategory === "all" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"}`}>Все</button>{categories.filter((category) => category.is_active).map((category) => <button key={category.id} onClick={() => setActiveCategory(category.id)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeCategory === category.id ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"}`}>{category.name}</button>)}</div></nav>
+  <nav aria-label="Категории меню" className="sticky top-0 z-30 border-y border-zinc-200/80 bg-[#f7f7f6]/95 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95"><div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:px-6"><button onClick={() => setActiveCategory("all")} className={`min-h-11 shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeCategory === "all" ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"}`}>Все</button>{categories.filter((category) => category.is_active).map((category) => <button key={category.id} onClick={() => setActiveCategory(category.id)} className={`min-h-11 shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeCategory === category.id ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700 dark:hover:bg-zinc-800"}`}>{category.name}</button>)}</div></nav>
 
   <div className="mx-auto max-w-6xl px-4 pt-7 sm:px-6">
     {showHighlights && popular.length ? <section data-section="popular"><SectionHeading icon={<Star size={15} fill="currentColor" />} title="Популярное" /><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{popular.map((item) => <DishCard key={item.id} item={item} onOpen={setSelectedItem} />)}</div></section> : null}
@@ -69,10 +66,10 @@ export function MenuHome({ categories, items, isDemo }: { categories: Category[]
     </section>
   </div>
   <CartButton onOpen={() => setCartIsOpen(true)} />
-  <nav aria-label="Основная навигация" className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95 sm:hidden"><div className="mx-auto flex max-w-md items-center justify-around px-4 py-2"><Link href="/" className="flex min-h-11 min-w-16 flex-col items-center justify-center gap-1 text-xs font-bold text-orange-600"><UtensilsCrossed size={20} />Меню</Link><button type="button" onClick={() => setCartIsOpen(true)} className="relative flex min-h-11 min-w-16 flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400"><ShoppingBag size={20} />Корзина{cartCount ? <span className="absolute right-1 top-0 grid min-h-5 min-w-5 place-items-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">{cartCount}</span> : null}</button><a href={whatsAppLink ?? undefined} target="_blank" rel="noreferrer" className="flex min-h-11 min-w-16 flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400"><MessageCircle size={20} />Связь</a></div></nav>
+  <nav aria-label="Основная навигация" className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95 sm:hidden"><div className="mx-auto grid max-w-md grid-cols-[1fr_1.6fr_1fr] items-center gap-2 px-3 py-2"><Link href="/" className="flex min-h-11 flex-col items-center justify-center gap-1 text-xs font-bold text-orange-600"><UtensilsCrossed size={20} />Меню</Link><button type="button" onClick={() => setCartIsOpen(true)} className={`relative flex min-h-12 items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold ${cartCount ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950" : "text-zinc-500 dark:text-zinc-400"}`}><ShoppingBag size={20} /><span>{cartCount ? `${cartCount} · ${new Intl.NumberFormat("ru-RU").format(cartTotal)} ₽` : "Корзина"}</span></button><a href={whatsAppLink ?? undefined} target="_blank" rel="noreferrer" className="flex min-h-11 flex-col items-center justify-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400"><MessageCircle size={20} />Связь</a></div></nav>
   {selectedItem ? <DishDetailsDialog item={selectedItem} onClose={() => setSelectedItem(null)} /> : null}
   <MenuSearchDialog open={searchIsOpen} categories={categories} items={items} onClose={() => setSearchIsOpen(false)} onOpenItem={setSelectedItem} onOpenCart={() => setCartIsOpen(true)} />
-  <CartDrawer open={cartIsOpen} onClose={() => setCartIsOpen(false)} />
+  <CartDrawer open={cartIsOpen} onClose={() => setCartIsOpen(false)} config={config} />
   {ordersAreOpen ? <OrderHistoryDialog onClose={() => setOrdersAreOpen(false)} /> : null}
   </main>;
 }

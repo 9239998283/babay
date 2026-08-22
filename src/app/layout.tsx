@@ -10,7 +10,7 @@ export const viewport: Viewport = { themeColor: "#f7f7f6", colorScheme: "light d
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "B-Bay «Бабай» — электронное меню", template: "%s | B-Bay" },
-  description: "Электронное меню кафе B-Bay «Бабай»: выберите блюда и отправьте заказ в WhatsApp.",
+  description: "Электронное меню кафе B-Bay «Бабай»: выберите блюда, оформите заказ и следите за его статусом.",
   applicationName: "B-Bay",
   keywords: ["B-Bay", "Бабай", "кафе", "меню", "Грозный", "заказ еды"],
   robots: { index: true, follow: true },
@@ -20,10 +20,10 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "B-Bay «Бабай»",
     title: "B-Bay «Бабай» — электронное меню",
-    description: "Выберите блюда и отправьте заказ в WhatsApp кафе.",
-    images: [{ url: "/og.png", width: 1734, height: 908, alt: "B-Bay — Вкус, к которому хочется вернуться" }],
+    description: "Выберите блюда, оформите заказ и следите за его статусом.",
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "B-Bay — Вкус, к которому хочется вернуться" }],
   },
-  twitter: { card: "summary_large_image", title: "B-Bay «Бабай»", description: "Электронное меню кафе B-Bay.", images: ["/og.png"] },
+  twitter: { card: "summary_large_image", title: "B-Bay «Бабай»", description: "Электронное меню и статусы заказов B-Bay.", images: ["/og.jpg"] },
   icons: { icon: "/favicon.svg" },
 };
 

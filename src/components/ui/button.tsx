@@ -13,7 +13,7 @@ const variants = {
   danger: "bg-red-50 text-red-700 hover:bg-red-100 focus-visible:outline-red-600",
 };
 
-const sizes = { sm: "h-9 px-3 text-sm", md: "h-11 px-4 text-sm", lg: "h-12 px-5 text-base" };
+const sizes = { sm: "h-11 px-3 text-sm", md: "h-11 px-4 text-sm", lg: "h-12 px-5 text-base" };
 
 export function Button({ children, className = "", variant = "primary", size = "md", type = "button", ...props }: ButtonProps) {
   return (

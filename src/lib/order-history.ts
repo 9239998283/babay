@@ -1,67 +1,65 @@
-import type { CartLine } from "@/types/menu";
-import type { CheckoutValues } from "@/lib/validation/checkout";
-import { cartTotal } from "@/lib/whatsapp";
+import { orderStatuses, type CreatedOrder, type OrderStatus } from "@/types/orders";
 
-const STORAGE_KEY = "b-bay-order-history-v1";
-const MAX_ORDERS = 10;
+const STORAGE_KEY = "b-bay-server-orders-v2";
+const MAX_ORDERS = 20;
 
-export type SavedOrder = {
-  id: string;
+export type SavedOrderReference = {
+  orderNumber: string;
+  trackingToken: string;
   createdAt: string;
   total: number;
-  count: number;
-  fulfillment: CheckoutValues["fulfillment"];
-  payment: CheckoutValues["payment"];
-  items: Array<{ name: string; quantity: number }>;
+  status: OrderStatus;
 };
 
-function isSavedOrder(value: unknown): value is SavedOrder {
+function isSavedOrderReference(value: unknown): value is SavedOrderReference {
   if (!value || typeof value !== "object") return false;
   const order = value as Record<string, unknown>;
-  const items = order.items;
-  return (
-    typeof order.id === "string" && typeof order.createdAt === "string" &&
-    !Number.isNaN(Date.parse(order.createdAt)) && typeof order.total === "number" &&
-    Number.isFinite(order.total) && order.total >= 0 && typeof order.count === "number" &&
-    Number.isFinite(order.count) && (order.fulfillment === "delivery" || order.fulfillment === "pickup") &&
-    (order.payment === "cash" || order.payment === "transfer") && Array.isArray(items) &&
-    items.every((item) => Boolean(item && typeof item === "object" &&
-      typeof (item as Record<string, unknown>).name === "string" &&
-      typeof (item as Record<string, unknown>).quantity === "number" &&
-      Number.isFinite((item as Record<string, unknown>).quantity)))
-  );
+  return typeof order.orderNumber === "string"
+    && /^BB-\d{6}-\d{5,}$/.test(order.orderNumber)
+    && typeof order.trackingToken === "string"
+    && /^[0-9a-f-]{36}$/i.test(order.trackingToken)
+    && typeof order.createdAt === "string"
+    && !Number.isNaN(Date.parse(order.createdAt))
+    && typeof order.total === "number"
+    && typeof order.status === "string"
+    && orderStatuses.includes(order.status as OrderStatus);
 }
 
-export function readSavedOrders(): SavedOrder[] {
+export function readSavedOrders(): SavedOrderReference[] {
   if (typeof window === "undefined") return [];
-
   try {
     const value = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]") as unknown;
-    if (!Array.isArray(value)) return [];
-    return value.filter(isSavedOrder).slice(0, MAX_ORDERS);
+    return Array.isArray(value) ? value.filter(isSavedOrderReference).slice(0, MAX_ORDERS) : [];
   } catch {
     return [];
   }
 }
 
-export function saveOrderSummary(lines: CartLine[], checkout: CheckoutValues) {
+export function saveOrderReference(order: CreatedOrder) {
   if (typeof window === "undefined") return;
-
-  const order: SavedOrder = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    createdAt: new Date().toISOString(),
-    total: cartTotal(lines),
-    count: lines.reduce((sum, line) => sum + line.quantity, 0),
-    fulfillment: checkout.fulfillment,
-    payment: checkout.payment,
-    items: lines.map((line) => ({ name: line.item.name, quantity: line.quantity })),
+  const reference: SavedOrderReference = {
+    orderNumber: order.orderNumber,
+    trackingToken: order.trackingToken,
+    createdAt: order.createdAt,
+    total: order.total,
+    status: order.status,
   };
-
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([order, ...readSavedOrders()].slice(0, MAX_ORDERS)));
+    const previous = readSavedOrders().filter((item) => item.orderNumber !== reference.orderNumber);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([reference, ...previous].slice(0, MAX_ORDERS)));
     window.dispatchEvent(new Event("b-bay-orders-updated"));
   } catch {
-    // Order submission must not fail because local history cannot be persisted.
+    // The order is already stored on the server; local references are optional.
+  }
+}
+
+export function updateSavedOrderStatus(orderNumber: string, status: OrderStatus) {
+  if (typeof window === "undefined") return;
+  try {
+    const orders = readSavedOrders().map((order) => order.orderNumber === orderNumber ? { ...order, status } : order);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+  } catch {
+    // Status remains available from the server when local storage is unavailable.
   }
 }
 
@@ -71,6 +69,6 @@ export function clearSavedOrders() {
     window.localStorage.removeItem(STORAGE_KEY);
     window.dispatchEvent(new Event("b-bay-orders-updated"));
   } catch {
-    // Nothing else is required when storage is unavailable.
+    // Only the local index is cleared; server orders are never deleted here.
   }
 }

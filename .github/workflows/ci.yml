@@ -32,7 +32,10 @@ jobs:
         run: npm run lint
 
       - name: Check TypeScript
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      - name: Test order rules
+        run: npm test
 
       - name: Build
         run: npm run build

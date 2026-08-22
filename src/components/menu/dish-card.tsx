@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { formatPrice } from "@/lib/format";
 import { useCart } from "@/store/cart-store";
 import type { MenuItem } from "@/types/menu";
@@ -13,12 +13,14 @@ export function DishCard({ item, onOpen, viewMode = "grid" }: { item: MenuItem; 
   const quickLine = lines.find((line) => line.item.id === item.id && line.selectedOptions.length === 0 && !line.comment);
   const isList = viewMode === "list";
 
-  function addQuickly() {
+  function addQuickly(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
     if (!item.is_available) return;
     addItem({ item, quantity: 1, selectedOptions: [], comment: "" });
   }
 
-  function changeQuickQuantity(quantity: number) {
+  function changeQuickQuantity(event: MouseEvent<HTMLButtonElement>, quantity: number) {
+    event.stopPropagation();
     if (!quickLine) return;
     updateQuantity(quickLine.key, quantity);
   }
@@ -53,7 +55,7 @@ export function DishCard({ item, onOpen, viewMode = "grid" }: { item: MenuItem; 
         <p className={`mt-1 line-clamp-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400 ${isList ? "" : "min-h-10"}`}>{item.description || "Аппетитное блюдо от B-Bay."}</p>
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-zinc-400">{item.weight || "—"}</span>
-          {quickLine ? <div className="pointer-events-auto relative z-20 inline-flex items-center gap-1 rounded-xl bg-orange-500 p-1 text-white shadow-lg shadow-orange-500/20"><button type="button" aria-label={`Уменьшить количество ${item.name}`} disabled={quickLine.quantity <= 1} onClick={() => changeQuickQuantity(quickLine.quantity - 1)} className="grid size-9 place-items-center rounded-lg transition hover:bg-white/15 disabled:opacity-50"><Minus size={15} /></button><span className="min-w-5 text-center text-sm font-extrabold">{quickLine.quantity}</span><button type="button" aria-label={`Увеличить количество ${item.name}`} disabled={quickLine.quantity >= 99} onClick={() => changeQuickQuantity(quickLine.quantity + 1)} className="grid size-9 place-items-center rounded-lg transition hover:bg-white/15 disabled:opacity-50"><Plus size={15} /></button></div> : <button
+          {quickLine ? <div className="pointer-events-auto relative z-20 inline-flex items-center gap-1 rounded-xl bg-orange-500 p-1 text-white shadow-lg shadow-orange-500/20"><button type="button" aria-label={`Уменьшить количество ${item.name}`} disabled={quickLine.quantity <= 1} onClick={(event) => changeQuickQuantity(event, quickLine.quantity - 1)} className="grid size-11 place-items-center rounded-lg transition hover:bg-white/15 disabled:opacity-50"><Minus size={15} /></button><span className="min-w-5 text-center text-sm font-extrabold">{quickLine.quantity}</span><button type="button" aria-label={`Увеличить количество ${item.name}`} disabled={quickLine.quantity >= 99} onClick={(event) => changeQuickQuantity(event, quickLine.quantity + 1)} className="grid size-11 place-items-center rounded-lg transition hover:bg-white/15 disabled:opacity-50"><Plus size={15} /></button></div> : <button
               type="button"
               aria-label={item.is_available ? `Добавить ${item.name} в корзину` : `${item.name} нет в наличии`}
               disabled={!item.is_available}
