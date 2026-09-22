@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
     root: process.cwd(),
   },
   images: {
+    localPatterns: [
+      { pathname: "/menu/defaults/*.webp", search: "?v=20260907" },
+      { pathname: "/menu/defaults/*.webp", search: "" },
+      { pathname: "/menu-placeholder.svg", search: "" },
+    ],
     remotePatterns: [
       {
         protocol: "https",
